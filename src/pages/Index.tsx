@@ -155,7 +155,7 @@ const Index = () => {
           />
         );
       case "googleForm":
-        return <GoogleFormStep personal={state.personal} onDone={() => {
+        return <GoogleFormStep personal={state.personal} trackingCode={state.trackingCode} onDone={() => {
           localStorage.removeItem(STORAGE_KEY);
           goTo("success");
         }} />;
