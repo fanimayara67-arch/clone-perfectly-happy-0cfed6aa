@@ -42,9 +42,13 @@ export const EligibilityStep = ({ onEligible, onIneligible }: EligibilityStepPro
         <h1 className="text-xl sm:text-2xl font-bold leading-tight mb-2">
           Antes de começar
         </h1>
-        <p className="text-sm opacity-95 leading-relaxed">
+        <p className="text-sm opacity-95 leading-relaxed mb-2">
           Por favor, confirme todos os critérios obrigatórios para participar
           desta pesquisa.
+        </p>
+        <p className="text-sm opacity-95 leading-relaxed">
+          GLP-1 refere-se a medicamentos usados principalmente para emagrecimento
+          e controle do diabetes (como Ozempic, Wegovy e Saxenda).
         </p>
       </div>
 
