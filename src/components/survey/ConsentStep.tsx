@@ -110,8 +110,23 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
                 <Input id="consent-name" value={consentData.participantName} onChange={(e) => setConsentData((current) => ({ ...current, participantName: e.target.value }))} placeholder="Digite seu nome completo" maxLength={120} className="h-11 bg-background" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="consent-id" className="text-xs font-semibold">Documento de identidade</Label>
-                <Input id="consent-id" value={consentData.identityDocument} onChange={(e) => setConsentData((current) => ({ ...current, identityDocument: e.target.value }))} placeholder="RG, CPF ou documento" maxLength={40} className="h-11 bg-background" />
+                <Label htmlFor="consent-id" className="text-xs font-semibold">CPF</Label>
+                <Input
+                  id="consent-id"
+                  value={consentData.identityDocument}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    const formatted = digits
+                      .replace(/^(\d{3})(\d)/, "$1.$2")
+                      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+                      .replace(/\.(\d{3})(\d)/, ".$1-$2");
+                    setConsentData((current) => ({ ...current, identityDocument: formatted }));
+                  }}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
+                  className="h-11 bg-background"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="consent-city" className="text-xs font-semibold">Cidade do aceite</Label>
