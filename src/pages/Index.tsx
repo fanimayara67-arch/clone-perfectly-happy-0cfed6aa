@@ -10,6 +10,7 @@ import { SuccessStep } from "@/components/survey/SuccessStep";
 import { GoogleFormStep } from "@/components/survey/GoogleFormStep";
 import { DeclinedStep } from "@/components/survey/DeclinedStep";
 import { supabase } from "@/integrations/supabase/client";
+import { generateTrackingCode } from "@/lib/tracking-code";
 
 type Stage =
   | "consent"
@@ -28,6 +29,7 @@ interface FormState {
   personal: Partial<PersonalData>;
   consent?: ConsentData;
   declinedReason?: DeclinedReason;
+  trackingCode?: string;
 }
 
 const initial: FormState = {
@@ -77,6 +79,8 @@ const Index = () => {
     }
 
     setSubmitting(true);
+    const trackingCode = state.trackingCode || generateTrackingCode();
+    setState((s) => ({ ...s, trackingCode }));
     toast.success("Pesquisa liberada. Pode responder o Google Forms.");
     goTo("googleForm");
 
@@ -93,6 +97,7 @@ const Index = () => {
         gender: personalCheck.data.gender,
         phone: personalCheck.data.phone,
         email: personalCheck.data.email || null,
+        tracking_code: trackingCode,
         screening_answers: {
           electronic_consent: {
             participant_name: state.consent?.participantName || personalCheck.data.full_name,
@@ -150,7 +155,7 @@ const Index = () => {
           />
         );
       case "googleForm":
-        return <GoogleFormStep personal={state.personal} onDone={() => {
+        return <GoogleFormStep personal={state.personal} trackingCode={state.trackingCode} onDone={() => {
           localStorage.removeItem(STORAGE_KEY);
           goTo("success");
         }} />;
