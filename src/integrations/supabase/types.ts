@@ -104,36 +104,6 @@ export type Database = {
         }
         Relationships: []
       }
-      valid_tokens: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          is_active: boolean
-          notes: string | null
-          used_at: string | null
-          used_by_response_id: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          notes?: string | null
-          used_at?: string | null
-          used_by_response_id?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          notes?: string | null
-          used_at?: string | null
-          used_by_response_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -148,10 +118,6 @@ export type Database = {
       }
       mark_google_form_completed: {
         Args: { _tracking_code: string }
-        Returns: boolean
-      }
-      validate_and_consume_token: {
-        Args: { _code: string; _response_id?: string }
         Returns: boolean
       }
     }

@@ -63,10 +63,10 @@ export const GoogleFormStep = ({ personal, trackingCode, onDone }: GoogleFormSte
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold text-foreground leading-snug">
-                Token validado — use no Google Forms
+                Seu código de identificação
               </p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Cole o token abaixo no campo <strong>"Código de identificação"</strong> dentro do Google Forms antes de enviar suas respostas.
+                Cole este código no campo <strong>"Código de identificação"</strong> dentro do Google Forms antes de enviar suas respostas.
               </p>
             </div>
           </div>

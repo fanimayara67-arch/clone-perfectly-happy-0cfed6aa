@@ -9,21 +9,20 @@ import { PersonalDataStep, PersonalData, personalDataSchema } from "@/components
 import { SuccessStep } from "@/components/survey/SuccessStep";
 import { GoogleFormStep } from "@/components/survey/GoogleFormStep";
 import { DeclinedStep } from "@/components/survey/DeclinedStep";
-import { TokenValidationStep } from "@/components/survey/TokenValidationStep";
 import { supabase } from "@/integrations/supabase/client";
+import { generateTrackingCode } from "@/lib/tracking-code";
 
 type Stage =
   | "consent"
   | "eligibility"
   | "personal"
-  | "token"
   | "googleForm"
   | "success"
   | "declined";
 type DeclinedReason = "consent" | "age" | "location" | "criteria";
 
-const STORAGE_KEY = "uniftc-glp1-survey-v3";
-const STEPS = ["Termo", "Critérios", "Dados", "Token", "Forms", "Fim"];
+const STORAGE_KEY = "uniftc-glp1-survey-v2";
+const STEPS = ["Termo", "Critérios", "Dados", "Google Forms", "Fim"];
 
 interface FormState {
   stage: Stage;
@@ -43,10 +42,12 @@ const Index = () => {
   const [personalValid, setPersonalValid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Limpar progresso antigo para evitar cache de etapas anteriores
   useEffect(() => {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  // Scroll ao topo ao mudar de etapa
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [state.stage]);
@@ -59,29 +60,17 @@ const Index = () => {
         return 2;
       case "personal":
         return 3;
-      case "token":
-        return 4;
       case "googleForm":
-        return 5;
+        return 4;
       case "success":
       case "declined":
-        return 6;
+        return 5;
     }
   }, [state.stage]);
 
   const goTo = (stage: Stage) => setState((s) => ({ ...s, stage }));
 
-  const goToTokenStep = () => {
-    const personalCheck = personalDataSchema.safeParse(state.personal);
-    if (!personalCheck.success) {
-      toast.error("Verifique os dados pessoais");
-      goTo("personal");
-      return;
-    }
-    goTo("token");
-  };
-
-  const handleTokenValidated = async (token: string) => {
+  const savePersonalDataAndOpenGoogleForm = async () => {
     const personalCheck = personalDataSchema.safeParse(state.personal);
     if (!personalCheck.success) {
       toast.error("Verifique os dados pessoais");
@@ -90,44 +79,44 @@ const Index = () => {
     }
 
     setSubmitting(true);
-    setState((s) => ({ ...s, trackingCode: token }));
-
-    const { error } = await supabase.from("survey_responses").insert({
-      full_name: personalCheck.data.full_name,
-      age: personalCheck.data.age,
-      nationality: personalCheck.data.nationality,
-      cep: personalCheck.data.cep,
-      street: personalCheck.data.street || null,
-      number: personalCheck.data.number || null,
-      neighborhood: personalCheck.data.neighborhood,
-      city: personalCheck.data.city,
-      state: personalCheck.data.state,
-      gender: personalCheck.data.gender,
-      phone: personalCheck.data.phone,
-      email: personalCheck.data.email || null,
-      tracking_code: token,
-      screening_answers: {
-        electronic_consent: {
-          participant_name: state.consent?.participantName || personalCheck.data.full_name,
-          identity_document: state.consent?.identityDocument || null,
-          consent_city: state.consent?.consentCity || null,
-          consent_date: state.consent?.consentDate || null,
-          accepted_tcle: true,
-        },
-      },
-      main_answers: {},
-      consent_given: true,
-    });
-
-    setSubmitting(false);
-
-    if (error) {
-      console.error(error);
-      toast.error("Erro ao salvar seus dados. Tente novamente.");
-      return;
-    }
-
+    const trackingCode = state.trackingCode || generateTrackingCode();
+    setState((s) => ({ ...s, trackingCode }));
+    toast.success("Pesquisa liberada. Pode responder o Google Forms.");
     goTo("googleForm");
+
+    supabase.from("survey_responses").insert({
+        full_name: personalCheck.data.full_name,
+        age: personalCheck.data.age,
+        nationality: personalCheck.data.nationality,
+        cep: personalCheck.data.cep,
+        street: personalCheck.data.street || null,
+        number: personalCheck.data.number || null,
+        neighborhood: personalCheck.data.neighborhood,
+        city: personalCheck.data.city,
+        state: personalCheck.data.state,
+        gender: personalCheck.data.gender,
+        phone: personalCheck.data.phone,
+        email: personalCheck.data.email || null,
+        tracking_code: trackingCode,
+        screening_answers: {
+          electronic_consent: {
+            participant_name: state.consent?.participantName || personalCheck.data.full_name,
+            identity_document: state.consent?.identityDocument || null,
+            consent_city: state.consent?.consentCity || null,
+            consent_date: state.consent?.consentDate || null,
+            accepted_tcle: true,
+          },
+        },
+        main_answers: {},
+        consent_given: true,
+      }).then(({ error }) => {
+        if (error) {
+          console.error(error);
+          toast.error("A pesquisa abriu, mas houve erro ao salvar os dados iniciais.");
+        }
+      }).then(() => {
+        setSubmitting(false);
+      });
   };
 
   const restart = () => {
@@ -165,24 +154,11 @@ const Index = () => {
             onValidityChange={setPersonalValid}
           />
         );
-      case "token":
-        return (
-          <TokenValidationStep
-            onValidated={handleTokenValidated}
-            loading={submitting}
-          />
-        );
       case "googleForm":
-        return (
-          <GoogleFormStep
-            personal={state.personal}
-            trackingCode={state.trackingCode}
-            onDone={() => {
-              localStorage.removeItem(STORAGE_KEY);
-              goTo("success");
-            }}
-          />
-        );
+        return <GoogleFormStep personal={state.personal} trackingCode={state.trackingCode} onDone={() => {
+          localStorage.removeItem(STORAGE_KEY);
+          goTo("success");
+        }} />;
       case "success":
         return <SuccessStep onRestart={restart} />;
       case "declined":
@@ -202,7 +178,7 @@ const Index = () => {
       toast.error("Responda todos os campos obrigatórios para continuar");
       return;
     }
-    if (state.stage === "personal") goToTokenStep();
+    if (state.stage === "personal") savePersonalDataAndOpenGoogleForm();
   };
 
   const handleBack = () => {
@@ -211,6 +187,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-soft">
+      {/* Header */}
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/60">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center gap-2 mb-3">
@@ -230,8 +207,10 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Conteúdo */}
       <main className="max-w-2xl mx-auto px-4 py-5 pb-32">{renderStage()}</main>
 
+      {/* Footer fixo de navegação */}
       {showFooter && (
         <footer className="fixed bottom-0 inset-x-0 z-30 bg-background/95 backdrop-blur-md border-t border-border/60 shadow-elevated">
           <div className="max-w-2xl mx-auto px-4 py-3 flex gap-2">
