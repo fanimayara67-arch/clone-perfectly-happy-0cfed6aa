@@ -24,6 +24,8 @@ export type Database = {
           email: string | null
           full_name: string
           gender: string
+          google_form_completed: boolean
+          google_form_completed_at: string | null
           id: string
           main_answers: Json
           nationality: string
@@ -33,6 +35,7 @@ export type Database = {
           screening_answers: Json
           state: string
           street: string | null
+          tracking_code: string | null
         }
         Insert: {
           age: number
@@ -43,6 +46,8 @@ export type Database = {
           email?: string | null
           full_name: string
           gender: string
+          google_form_completed?: boolean
+          google_form_completed_at?: string | null
           id?: string
           main_answers?: Json
           nationality: string
@@ -52,6 +57,7 @@ export type Database = {
           screening_answers?: Json
           state: string
           street?: string | null
+          tracking_code?: string | null
         }
         Update: {
           age?: number
@@ -62,6 +68,8 @@ export type Database = {
           email?: string | null
           full_name?: string
           gender?: string
+          google_form_completed?: boolean
+          google_form_completed_at?: string | null
           id?: string
           main_answers?: Json
           nationality?: string
@@ -71,6 +79,28 @@ export type Database = {
           screening_answers?: Json
           state?: string
           street?: string | null
+          tracking_code?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -79,10 +109,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      mark_google_form_completed: {
+        Args: { _tracking_code: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -209,6 +249,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
