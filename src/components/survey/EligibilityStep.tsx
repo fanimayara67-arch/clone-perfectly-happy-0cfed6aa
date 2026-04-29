@@ -129,7 +129,7 @@ const CRITERIA = [
     id: "medicine-check",
     icon: <ShieldAlert className="h-4 w-4" />,
     title: "Você já fez uso de algum outro medicamento para perda de peso que não pertença à classe dos análogos de GLP-1 (semaglutida: Ozempic/Wegovy; liraglutida: Saxenda/Victoza; dulaglutida: Trulicity)?",
-    subtitle: "Responda \"Sim\" apenas se usou outro remédio para emagrecer que não seja um desses análogos de GLP-1 citados.",
+    subtitle: "Responda \"Sim\" apenas se usou outro medicamento para emagrecer que não seja um desses análogos de GLP-1 citados.",
     eligibleValue: "no",
     reason: "criteria" as const,
   },
