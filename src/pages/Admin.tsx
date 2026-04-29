@@ -86,36 +86,42 @@ const Admin = () => {
     };
     load();
 
-    const channel = supabase
-      .channel("admin-survey-responses")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "survey_responses" },
-        (payload) => {
-          const row = payload.new as Response;
-          setResponses((prev) => [row, ...prev.filter((r) => r.id !== row.id)]);
-          setHighlightId(row.id);
+    // Poll every 10s for new/updated responses (realtime disabled for security)
+    const interval = setInterval(async () => {
+      const { data, error } = await supabase
+        .from("survey_responses")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error(error);
+        return;
+      }
+      const fresh = (data || []) as Response[];
+      setResponses((prev) => {
+        const prevIds = new Set(prev.map((r) => r.id));
+        const newOnes = fresh.filter((r) => !prevIds.has(r.id));
+        if (newOnes.length > 0) {
+          const first = newOnes[0];
+          setHighlightId(first.id);
           setTimeout(() => setHighlightId(null), 3000);
-          toast.success(`Nova resposta: ${row.full_name}`, {
-            description: row.tracking_code || "sem código",
+          toast.success(`Nova resposta: ${first.full_name}`, {
+            description: first.tracking_code || "sem código",
           });
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "survey_responses" },
-        (payload) => {
-          const row = payload.new as Response;
-          setResponses((prev) => prev.map((r) => (r.id === row.id ? row : r)));
-          if (row.google_form_completed) {
-            toast.info(`${row.full_name} concluiu o Google Forms`);
+        // Detect completion changes
+        const prevById = new Map(prev.map((r) => [r.id, r]));
+        for (const r of fresh) {
+          const old = prevById.get(r.id);
+          if (old && !old.google_form_completed && r.google_form_completed) {
+            toast.info(`${r.full_name} concluiu o Google Forms`);
           }
         }
-      )
-      .subscribe();
+        return fresh;
+      });
+    }, 10000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [user, isAdmin]);
 
