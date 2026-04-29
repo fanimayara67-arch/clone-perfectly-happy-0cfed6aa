@@ -1,4 +1,4 @@
-import { CheckCircle2, BookOpen, Users, GraduationCap } from "lucide-react";
+import { CheckCircle2, Users, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SuccessStepProps {
@@ -11,12 +11,6 @@ const AUTHORS = [
   "[Nome do(a) Aluno(a) 2]",
 ];
 const ADVISOR = "[Nome do(a) Orientador(a)]";
-const REFERENCES = [
-  "[Referência 1 — autor, título, periódico, ano]",
-  "[Referência 2 — autor, título, periódico, ano]",
-  "[Referência 3 — autor, título, periódico, ano]",
-  "[Referência 4 — autor, título, periódico, ano]",
-];
 
 export const SuccessStep = ({ onRestart }: SuccessStepProps) => {
   return (
@@ -66,19 +60,6 @@ export const SuccessStep = ({ onRestart }: SuccessStepProps) => {
           </p>
           <p className="text-sm text-foreground font-medium">{ADVISOR}</p>
         </div>
-      </div>
-
-      <div className="bg-card rounded-2xl p-5 shadow-card border border-border/60 space-y-3">
-        <SectionTitle icon={<BookOpen className="h-4 w-4" />}>
-          Referências Bibliográficas
-        </SectionTitle>
-        <ol className="space-y-2 list-decimal list-inside">
-          {REFERENCES.map((ref, i) => (
-            <li key={i} className="text-xs text-muted-foreground leading-relaxed">
-              {ref}
-            </li>
-          ))}
-        </ol>
       </div>
 
       <Button
