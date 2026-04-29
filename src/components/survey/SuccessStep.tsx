@@ -1,4 +1,4 @@
-import { CheckCircle2, BookOpen, Users, GraduationCap } from "lucide-react";
+import { CheckCircle2, Users, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SuccessStepProps {
@@ -11,12 +11,6 @@ const AUTHORS = [
   "[Nome do(a) Aluno(a) 2]",
 ];
 const ADVISOR = "[Nome do(a) Orientador(a)]";
-const REFERENCES = [
-  "[Referência 1 — autor, título, periódico, ano]",
-  "[Referência 2 — autor, título, periódico, ano]",
-  "[Referência 3 — autor, título, periódico, ano]",
-  "[Referência 4 — autor, título, periódico, ano]",
-];
 
 export const SuccessStep = ({ onRestart }: SuccessStepProps) => {
   return (
