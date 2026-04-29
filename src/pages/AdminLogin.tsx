@@ -11,7 +11,6 @@ import { useAuth } from "@/hooks/use-auth";
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { user, isAdmin, loading } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -30,20 +29,10 @@ const AdminLogin = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Login realizado!");
-        navigate("/admin");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Verifique seu email para confirmar.");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Login realizado!");
+      navigate("/admin");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao autenticar";
       toast.error(msg);
@@ -69,7 +58,7 @@ const AdminLogin = () => {
 
         {user && !isAdmin && (
           <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm text-destructive">
-            Sua conta não tem permissão de administrador. Solicite acesso ao responsável.
+            Sua conta não tem permissão de administrador.
           </div>
         )}
 
@@ -91,10 +80,9 @@ const AdminLogin = () => {
               id="password"
               type="password"
               required
-              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              autoComplete="current-password"
             />
           </div>
           <Button
@@ -103,25 +91,13 @@ const AdminLogin = () => {
             size="lg"
             className="w-full h-12 rounded-xl bg-gradient-primary font-semibold"
           >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : mode === "login" ? (
-              "Entrar"
-            ) : (
-              "Criar conta"
-            )}
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar"}
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="text-sm text-muted-foreground hover:text-primary transition-smooth"
-          >
-            {mode === "login" ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
-          </button>
-        </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Acesso restrito. Apenas administradores autorizados.
+        </p>
       </div>
     </div>
   );
