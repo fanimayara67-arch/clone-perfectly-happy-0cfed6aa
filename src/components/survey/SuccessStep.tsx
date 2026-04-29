@@ -62,19 +62,6 @@ export const SuccessStep = ({ onRestart }: SuccessStepProps) => {
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl p-5 shadow-card border border-border/60 space-y-3">
-        <SectionTitle icon={<BookOpen className="h-4 w-4" />}>
-          Referências Bibliográficas
-        </SectionTitle>
-        <ol className="space-y-2 list-decimal list-inside">
-          {REFERENCES.map((ref, i) => (
-            <li key={i} className="text-xs text-muted-foreground leading-relaxed">
-              {ref}
-            </li>
-          ))}
-        </ol>
-      </div>
-
       <Button
         onClick={onRestart}
         variant="outline"
