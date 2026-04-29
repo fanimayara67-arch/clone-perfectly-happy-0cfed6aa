@@ -10,7 +10,7 @@ type GoogleFormPayload = {
 
 type EntryMap = Record<string, string>;
 
-export const GOOGLE_FORM_ID = "1FAIpQLSeYAkcdJG_TWT5GP32CfTMp_Wlp9dDNpFu4-U6tcxI1K55__w";
+export const GOOGLE_FORM_ID = "1FAIpQLSfkK5RUJIZ6a95AGx7zHDJAKWo9a1_SSEVO9umV8l5idc5VHw";
 export const GOOGLE_FORM_URL = `https://docs.google.com/forms/d/e/${GOOGLE_FORM_ID}/viewform`;
 export const GOOGLE_FORM_EMBED_URL = `${GOOGLE_FORM_URL}?embedded=true`;
 
