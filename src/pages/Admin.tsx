@@ -386,6 +386,12 @@ const Admin = () => {
             </div>
           )}
         </div>
+          </TabsContent>
+
+          <TabsContent value="tokens">
+            <TokenManager />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Detail dialog */}
