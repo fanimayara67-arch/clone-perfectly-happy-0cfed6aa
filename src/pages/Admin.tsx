@@ -30,9 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { GOOGLE_FORM_URL } from "@/lib/google-forms";
+import { TokenManager } from "@/components/admin/TokenManager";
 import { cn } from "@/lib/utils";
 
 interface Response {
@@ -247,6 +249,13 @@ const Admin = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-5 space-y-5">
         {/* Stats */}
+        <Tabs defaultValue="responses" className="space-y-5">
+          <TabsList>
+            <TabsTrigger value="responses">Respostas</TabsTrigger>
+            <TabsTrigger value="tokens">Tokens</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="responses" className="space-y-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard icon={<Users className="h-4 w-4" />} label="Total" value={stats.total} />
           <StatCard
@@ -377,6 +386,12 @@ const Admin = () => {
             </div>
           )}
         </div>
+          </TabsContent>
+
+          <TabsContent value="tokens">
+            <TokenManager />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Detail dialog */}
