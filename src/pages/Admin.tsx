@@ -249,6 +249,13 @@ const Admin = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-5 space-y-5">
         {/* Stats */}
+        <Tabs defaultValue="responses" className="space-y-5">
+          <TabsList>
+            <TabsTrigger value="responses">Respostas</TabsTrigger>
+            <TabsTrigger value="tokens">Tokens</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="responses" className="space-y-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard icon={<Users className="h-4 w-4" />} label="Total" value={stats.total} />
           <StatCard
