@@ -108,8 +108,8 @@ const CRITERIA = [
   {
     id: "schooling-check",
     icon: <CalendarCheck className="h-4 w-4" />,
-    title: "Você possui escolaridade?",
-    subtitle: "Conforme o TCLE, indivíduos sem escolaridade não integram os critérios da pesquisa.",
+    title: "Você possui ensino médio completo?",
+    subtitle: "Critério necessário para garantir compreensão adequada das perguntas da pesquisa.",
     eligibleValue: "yes",
     reason: "criteria" as const,
   },
@@ -124,8 +124,8 @@ const CRITERIA = [
   {
     id: "medicine-check",
     icon: <ShieldAlert className="h-4 w-4" />,
-    title: "Você utilizou outro medicamento para emagrecimento concomitantemente?",
-    subtitle: "O uso simultâneo de outro medicamento para emagrecimento é critério de exclusão.",
+    title: "Você já fez uso de algum outro medicamento para perda de peso que não pertença à classe dos análogos de GLP-1 (semaglutida: Ozempic/Wegovy; liraglutida: Saxenda/Victoza; dulaglutida: Trulicity)?",
+    subtitle: "Responda \"Sim\" apenas se usou outro remédio para emagrecer que não seja um desses análogos de GLP-1 citados.",
     eligibleValue: "no",
     reason: "criteria" as const,
   },
