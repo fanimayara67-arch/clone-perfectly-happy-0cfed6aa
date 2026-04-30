@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      invalid_form_responses: {
+        Row: {
+          attempted_code: string | null
+          created_at: string
+          form_submitted_at: string | null
+          id: string
+          payload: Json
+          reason: string | null
+        }
+        Insert: {
+          attempted_code?: string | null
+          created_at?: string
+          form_submitted_at?: string | null
+          id?: string
+          payload?: Json
+          reason?: string | null
+        }
+        Update: {
+          attempted_code?: string | null
+          created_at?: string
+          form_submitted_at?: string | null
+          id?: string
+          payload?: Json
+          reason?: string | null
+        }
+        Relationships: []
+      }
       survey_responses: {
         Row: {
           age: number
@@ -35,6 +62,8 @@ export type Database = {
           screening_answers: Json
           state: string
           street: string | null
+          token_validated: boolean
+          token_validated_at: string | null
           tracking_code: string | null
         }
         Insert: {
@@ -57,6 +86,8 @@ export type Database = {
           screening_answers?: Json
           state: string
           street?: string | null
+          token_validated?: boolean
+          token_validated_at?: string | null
           tracking_code?: string | null
         }
         Update: {
@@ -79,6 +110,8 @@ export type Database = {
           screening_answers?: Json
           state?: string
           street?: string | null
+          token_validated?: boolean
+          token_validated_at?: string | null
           tracking_code?: string | null
         }
         Relationships: []
@@ -104,11 +137,45 @@ export type Database = {
         }
         Relationships: []
       }
+      valid_tokens: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          used_at: string | null
+          used_by_response_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          used_at?: string | null
+          used_by_response_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          used_at?: string | null
+          used_by_response_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      confirm_response_with_token: {
+        Args: { _tracking_code: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -118,6 +185,11 @@ export type Database = {
       }
       mark_google_form_completed: {
         Args: { _tracking_code: string }
+        Returns: boolean
+      }
+      register_tracking_code: { Args: { _code: string }; Returns: boolean }
+      validate_and_consume_token: {
+        Args: { _code: string; _response_id?: string }
         Returns: boolean
       }
     }

@@ -1,122 +1,85 @@
-# Painel Administrativo com Monitoramento em Tempo Real
+## Situação atual
 
-## Esclarecendo a sua dúvida sobre "quem preencheu o quê"
+Hoje o sistema gera um código tipo `UFTC-XXXXXX` (ex: `UFTC-7RDHED`) na etapa "Dados Pessoais" e mostra para o usuário copiar e colar dentro do Google Forms, no campo "Código de identificação".
 
-Hoje o fluxo já funciona assim:
+**Problema:** não há nenhuma validação real — o usuário pode digitar qualquer coisa no Google Forms (ou nem preencher) e mesmo assim a resposta é aceita. O código gerado pelo site não está vinculado de forma obrigatória à submissão do Forms.
 
-```text
-Etapa 1 (Termo) → Etapa 2 (Critérios) → Etapa 3 (Dados Pessoais)
-                                              ↓
-                                  SALVA no Supabase (survey_responses)
-                                              ↓
-Etapa 4 (Google Forms) ← embedado, mas as respostas ficam no Google
-                                              ↓
-Etapa 5 (Sucesso)
-```
+## O que você quer
 
-**O problema real**: o Google Forms é um sistema externo do Google, então as respostas dele NÃO estão no nosso banco — ficam na planilha do Google. Para correlacionar quem é quem, vamos:
+Que **só seja considerada válida** a resposta do Google Forms cujo código de identificação seja **exatamente** o que o sistema gerou. Token errado/inventado → resposta inválida.
 
-1. Gerar um **código único** (ex.: `UFTC-A3F9K2`) para cada pessoa quando ela termina os Dados Pessoais
-2. Mostrar esse código bem destacado na tela do Google Forms e instruir a pessoa a digitar ele em um campo "Código de identificação" do formulário Google
-3. Salvar esse mesmo código no Supabase junto com os dados pessoais
-4. No painel, você vê os dados pessoais + o código → cruza com a planilha do Google Forms pelo código
+## Como o Google Forms funciona (limitação importante)
 
-Assim você sabe exatamente: "essa linha do Google Forms (código UFTC-A3F9K2) é o João Silva, 28 anos, de Salvador".
+O Google Forms **não permite validação dinâmica server-side contra nosso banco** dentro do próprio formulário. Ele só valida formato (regex). Ou seja: não conseguimos fazer o Forms rejeitar um token inválido na hora do envio.
 
-## O que vai ser construído
+Existem duas formas viáveis de garantir que só o token correto vale:
 
-### 1. Sistema de autenticação para admins
-- Tela de login em `/admin/login` (email + senha)
-- Tabela `user_roles` com enum `app_role` (`admin`) — segura, sem privilege escalation
-- Função `has_role()` SECURITY DEFINER
-- Apenas admins acessam o painel; qualquer outro usuário é bloqueado
-- Você cadastra seu email manualmente como admin via SQL após o primeiro signup
+### Opção A — Validação pós-envio (recomendada, simples)
 
-### 2. Mudança no schema (migration)
-- Adicionar coluna `tracking_code` (text, único) na tabela `survey_responses`
-- Adicionar coluna `google_form_completed` (boolean, default false) — marca quando a pessoa clicou em "Finalizei o Google Forms"
-- Adicionar coluna `google_form_completed_at` (timestamp)
-- Atualizar policy de SELECT para exigir role admin (mais seguro que "qualquer autenticado")
-- Habilitar realtime na tabela: `ALTER PUBLICATION supabase_realtime ADD TABLE survey_responses`
+1. Ao gerar o código no site, **gravamos ele como ativo** na tabela `valid_tokens` (já existe).
+2. O usuário cola o código dentro do Google Forms.
+3. Periodicamente (ou sob demanda no painel Admin), uma **edge function** lê as respostas do Google Forms via Google Sheets/Drive API (a service account já está configurada — `GOOGLE_SERVICE_ACCOUNT_JSON`) e:
+   - Para cada resposta do Forms, pega o campo "Código de identificação".
+   - Confere contra `valid_tokens` (existe? está ativo? não usado?).
+   - Se válido → marca como `used_at` e vincula à `survey_responses`.
+   - Se inválido → marca a resposta como **descartada/inválida** numa nova tabela `invalid_form_responses` (ou flag).
+4. No painel Admin, mostramos só as respostas com token válido.
 
-### 3. Mudanças no fluxo da pesquisa
-- Ao salvar dados pessoais, gerar `tracking_code` curto e legível (formato `UFTC-XXXXXX`)
-- Na tela do Google Forms, exibir um **card destacado** com o código + botão "Copiar código"
-- Texto claro: "Cole este código no campo 'Código de identificação' dentro do Google Forms antes de enviar"
-- Quando a pessoa clica em "Finalizei o Google Forms", atualizar `google_form_completed = true` no banco
+### Opção B — Validação prévia no site (mais rígida)
 
-### 4. Painel admin em `/admin`
-**Layout**: sidebar com navegação + área principal
+1. Antes de mostrar o botão "Abrir pesquisa", o usuário precisa **confirmar no site** que vai usar aquele código específico.
+2. O código vai como parâmetro **pré-preenchido e travado** na URL do Google Forms (`entry.XXXX=UFTC-...`).
+3. Isso reduz o risco de inventarem token, mas tecnicamente o usuário ainda pode editar manualmente. A validação real continua sendo a da Opção A no pós-envio.
 
-**Cards de estatísticas no topo (ao vivo)**:
-- Total de cadastros
-- Concluíram Google Forms
-- Pendentes (cadastraram mas não finalizaram)
-- Cadastros nas últimas 24h
+**As duas opções se complementam.** Recomendo fazer ambas.
 
-**Tabela principal de respostas** com:
-- Código de tracking (destaque, copiável)
-- Nome, idade, gênero
-- Cidade / Estado
-- Telefone, email
-- Status do Google Forms (badge verde "Concluído" / amarelo "Pendente")
-- Data/hora do cadastro
-- Botão "Ver detalhes" → abre modal com TODOS os campos (CEP, rua, número, bairro, nacionalidade, dados do termo de consentimento)
+## Plano de implementação
 
-**Filtros**:
-- Buscar por nome / código / email
-- Filtrar por status (todos / concluídos / pendentes)
-- Filtrar por intervalo de datas
-- Filtrar por cidade/estado
+### 1. Banco de dados (migração)
+- Garantir que ao gerar o `tracking_code` no site ele seja inserido em `valid_tokens` como `is_active=true`. Hoje só é gerado client-side e salvo em `survey_responses.tracking_code`, mas **não** é registrado em `valid_tokens` — por isso a função `validate_and_consume_token` nunca encontra nada. Vamos:
+  - Criar uma RPC `register_tracking_code(_code text, _response_id uuid)` que insere em `valid_tokens` (security definer).
+  - Adicionar coluna `survey_responses.token_validated boolean default false` e `token_validated_at timestamptz`.
 
-**Exportação**:
-- Botão "Exportar CSV" — baixa todos os dados filtrados para você cruzar com a planilha do Google Forms
+### 2. Frontend (`src/pages/Index.tsx`)
+- Após gerar o `trackingCode`, chamar a nova RPC `register_tracking_code` para registrá-lo como ativo antes de liberar o Google Forms.
 
-**Tempo real (sem refresh)**:
-- Subscription do Supabase Realtime na tabela
-- Quando alguém cadastra → linha aparece no topo da tabela com animação de destaque
-- Quando alguém finaliza Google Forms → badge muda de "Pendente" para "Concluído" automaticamente
-- Toast de notificação: "Nova resposta de João Silva"
-- Stats no topo recalculam sozinhos
+### 3. Edge function `sync-google-form-responses`
+- Lê respostas do Google Forms (via Sheets API com service account).
+- ID do Forms já configurado: `1FAIpQLSfkK5RUJIZ6a95AGx7zHDJAKWo9a1_SSEVO9umV8l5idc5VHw`.
+- **Você precisa me informar:** o ID da planilha de respostas vinculada (Forms → Respostas → ícone do Sheets → URL contém `/d/SHEET_ID/`) **ou** compartilhar a planilha com o e-mail da service account para acesso.
+- Para cada linha:
+  - Extrai o campo "Código de identificação".
+  - Chama `validate_and_consume_token(code, response_id)`.
+  - Se válido → atualiza `survey_responses` com `token_validated=true` e copia respostas do Forms para `main_answers`.
+  - Se inválido → grava em nova tabela `invalid_form_responses` (timestamp da resposta, código tentado, payload).
 
-### 5. Página "Como cruzar com o Google Forms"
-Pequena página de ajuda explicando:
-- Onde está o link da planilha de respostas do Google Forms
-- Como filtrar pela coluna "Código de identificação"
-- Como combinar com os dados do painel
+### 4. Painel Admin (`src/pages/Admin.tsx`)
+- Botão "Sincronizar respostas do Google Forms" → chama a edge function.
+- Filtro: mostrar só respostas com `token_validated=true` (válidas) por padrão; aba separada para "Tentativas inválidas".
+
+### 5. Opcional — automação
+- Cron na edge function (a cada 15 min) para sincronizar automaticamente, sem precisar clicar no botão.
 
 ## Detalhes técnicos
 
-**Stack**: Supabase Auth (email/senha), Supabase Realtime, React Router (rota protegida), TanStack Query, shadcn Table/Dialog/Sidebar.
+```text
+Fluxo final:
 
-**Segurança**:
-- RLS em `survey_responses`: SELECT apenas se `has_role(auth.uid(), 'admin')`
-- INSERT continua aberto para anon (pesquisa pública)
-- UPDATE permitido para anon apenas no campo `google_form_completed` via RPC restrita (ou mantemos UPDATE aberto só para esse marcador) — vou usar RPC para ser estrito
-- Roles em tabela separada (`user_roles`), nunca em profiles
-- `tracking_code` gerado client-side com `crypto.getRandomValues` em formato curto
-
-**Realtime**:
-```typescript
-supabase.channel('admin-survey')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'survey_responses' }, handler)
-  .subscribe()
+[Site] gera UFTC-XXX → grava valid_tokens(is_active=true)
+   │
+   └─> survey_responses.insert (token_validated=false)
+   │
+   └─> usuário cola UFTC-XXX no Google Forms e envia
+                         │
+                         ▼
+            [Edge Function de sync — manual ou cron]
+                         │
+                         ├─ token bate? → consome token + token_validated=true
+                         └─ token não bate? → invalid_form_responses
 ```
 
-**Rotas adicionadas**:
-- `/admin/login` — pública
-- `/admin` — protegida (admin only) → dashboard
-- `/admin/responses/:id` — modal/página de detalhes
+## O que preciso de você antes de implementar
 
-## ⚠️ Pergunta importante antes de implementar
-
-**Para o login admin funcionar, eu vou precisar configurar autenticação por email/senha.**
-
-Por padrão o Supabase exige confirmação de email (você recebe um link no seu email antes de poder logar). Você quer:
-
-- **(A)** Confirmação de email ATIVADA (mais seguro, padrão) — você precisa clicar no link do email após criar a conta admin
-- **(B)** Confirmação DESATIVADA (mais rápido para testes) — login imediato após signup
-
-Posso seguir com **(A)** por padrão se você não responder. E após você criar sua conta no `/admin/login`, eu te passo o SQL exato para você rodar e virar admin (algo como `INSERT INTO user_roles (user_id, role) VALUES ('seu-uuid', 'admin')`).
-
-Se aprovar, eu implemento tudo de uma vez.
+1. **Confirmar a abordagem** (Opção A + B juntas, recomendado).
+2. **ID da planilha de respostas do Google Forms** OU me diga que você vai compartilhar a planilha com a service account (eu te passo o e-mail dela depois).
+3. Quer **sincronização automática** (cron a cada 15 min) ou só **manual** via botão no Admin?
