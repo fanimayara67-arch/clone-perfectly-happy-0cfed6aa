@@ -1,17 +1,20 @@
 // Edge function: sync-google-form-responses
-// Reads the Google Sheet bound to the Google Form and validates each
-// "Código de identificação" against the tokens issued by the site.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // ====== Google Service Account auth → access token ======
 async function getGoogleAccessToken(serviceAccountJson: string): Promise<string> {
-  const sa = JSON.parse(serviceAccountJson);
+  let sa;
+  try {
+    sa = JSON.parse(serviceAccountJson);
+  } catch {
+    throw new Error("JSON da service account inválido");
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
@@ -22,36 +25,28 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
     iat: now,
   };
 
-  const enc = (obj: unknown) =>
-    btoa(JSON.stringify(obj))
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+  const enc = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
   const unsigned = `${enc(header)}.${enc(claim)}`;
 
-  // Import private key (PEM PKCS8) for RS256 signing
   const pem = (sa.private_key as string)
     .replace(/-----BEGIN PRIVATE KEY-----/, "")
     .replace(/-----END PRIVATE KEY-----/, "")
     .replace(/\s+/g, "");
+
   const der = Uint8Array.from(atob(pem), (c) => c.charCodeAt(0));
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    der,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sigBuf = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    new TextEncoder().encode(unsigned),
-  );
+
+  const cryptoKey = await crypto.subtle.importKey("pkcs8", der, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
+
+  const sigBuf = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, new TextEncoder().encode(unsigned));
+
   const sig = btoa(String.fromCharCode(...new Uint8Array(sigBuf)))
     .replace(/=/g, "")
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
+
   const jwt = `${unsigned}.${sig}`;
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -62,33 +57,45 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
       assertion: jwt,
     }),
   });
+
   if (!tokenRes.ok) {
     throw new Error(`Google token error: ${tokenRes.status} ${await tokenRes.text()}`);
   }
+
   const json = await tokenRes.json();
   return json.access_token as string;
 }
 
-// Find the column index whose header looks like the tracking-code field.
+// ====== DETECÇÃO ROBUSTA DA COLUNA ======
 function findCodeColumn(header: string[]): number {
-  const candidates = [
-    "código de identificação",
-    "codigo de identificacao",
-    "código",
-    "codigo",
-    "tracking code",
-    "código uftc",
-  ];
   const norm = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const idx = header.findIndex((h) => candidates.some((c) => norm(h).includes(norm(c))));
-  return idx;
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  return header.findIndex((h) => {
+    const n = norm(h);
+    return (
+      n.includes("codigo") ||
+      n.includes("identificacao") ||
+      n.includes("autenticacao") ||
+      n.includes("token") ||
+      n.includes("tracking")
+    );
+  });
 }
 
-// Find timestamp column (Google Forms always adds "Carimbo de data/hora" / "Timestamp")
+// ====== TIMESTAMP ======
 function findTimestampColumn(header: string[]): number {
   const norm = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
   return header.findIndex((h) => /carimbo|timestamp|data\/?hora/.test(norm(h)));
 }
 
@@ -104,138 +111,103 @@ Deno.serve(async (req) => {
     const SA_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
 
     if (!SHEET_ID) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "GOOGLE_FORM_RESPONSES_SHEET_ID não configurado. Configure o ID da planilha de respostas vinculada ao Google Forms.",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-    if (!SA_JSON) {
-      return new Response(
-        JSON.stringify({ error: "GOOGLE_SERVICE_ACCOUNT_JSON não configurado." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      throw new Error("SHEET_ID não configurado");
     }
 
-    // Verify caller is an admin
+    if (!SA_JSON) {
+      throw new Error("SERVICE ACCOUNT não configurada");
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
+
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
+
     const { data: userData } = await userClient.auth.getUser();
+
     if (!userData?.user) {
       return new Response(JSON.stringify({ error: "Não autenticado" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: corsHeaders,
       });
     }
+
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
     const { data: roleRow } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id)
       .eq("role", "admin")
       .maybeSingle();
+
     if (!roleRow) {
-      return new Response(JSON.stringify({ error: "Acesso negado" }), {
+      return new Response(JSON.stringify({ error: "Sem permissão" }), {
         status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: corsHeaders,
       });
     }
 
-    // Read sheet
     const accessToken = await getGoogleAccessToken(SA_JSON);
-    const sheetRes = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/A1:ZZ10000`,
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    );
+
+    const sheetRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/A1:ZZ10000`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
     if (!sheetRes.ok) {
-      const t = await sheetRes.text();
-      throw new Error(`Sheets API error ${sheetRes.status}: ${t}`);
+      throw new Error(`Erro Sheets: ${sheetRes.status}`);
     }
+
     const sheetJson = await sheetRes.json();
     const rows: string[][] = sheetJson.values ?? [];
+
     if (rows.length < 2) {
-      return new Response(
-        JSON.stringify({ ok: true, processed: 0, valid: 0, invalid: 0, message: "Sem respostas" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ ok: true, message: "Sem respostas" }), {
+        headers: corsHeaders,
+      });
     }
 
     const header = rows[0];
+
+    console.log("HEADER:", header);
+
     const codeCol = findCodeColumn(header);
     const tsCol = findTimestampColumn(header);
+
     if (codeCol < 0) {
-      throw new Error(
-        "Coluna de código de identificação não encontrada na planilha. Verifique o cabeçalho do Google Forms.",
-      );
+      console.error("HEADER RECEBIDO:", header);
+      throw new Error("Coluna de código não encontrada");
     }
 
     let valid = 0;
     let invalid = 0;
-    const dataRows = rows.slice(1);
 
-    for (const row of dataRows) {
+    for (const row of rows.slice(1)) {
       const rawCode = (row[codeCol] ?? "").toString().trim();
-      const ts = tsCol >= 0 ? row[tsCol] : null;
+      const normalized = rawCode.toUpperCase();
+
       const payload: Record<string, string> = {};
       header.forEach((h, i) => (payload[h] = row[i] ?? ""));
 
-      const normalized = rawCode.toUpperCase();
-
-      // Try to confirm; the SQL function checks format, existence and consumes the token.
-      const { data: ok, error } = await admin.rpc("confirm_response_with_token", {
+      const { data: ok } = await admin.rpc("confirm_response_with_token", {
         _tracking_code: normalized,
       });
 
-      if (error) {
-        console.error("RPC error", error);
-        continue;
-      }
-
       if (ok) {
-        // Save form payload into main_answers for the validated response
-        await admin
-          .from("survey_responses")
-          .update({ main_answers: payload })
-          .eq("tracking_code", normalized);
+        await admin.from("survey_responses").update({ main_answers: payload }).eq("tracking_code", normalized);
         valid++;
       } else {
-        // Avoid logging the same invalid attempt twice
-        const { data: existing } = await admin
-          .from("invalid_form_responses")
-          .select("id")
-          .eq("attempted_code", normalized || "")
-          .eq("form_submitted_at", ts ? new Date(ts).toISOString() : null)
-          .maybeSingle();
-        if (!existing) {
-          await admin.from("invalid_form_responses").insert({
-            attempted_code: normalized || null,
-            form_submitted_at: ts ? new Date(ts).toISOString() : null,
-            payload,
-            reason: !rawCode
-              ? "código ausente"
-              : !/^UFTC-[A-Z0-9]{4,16}$/.test(normalized)
-              ? "formato inválido"
-              : "código não encontrado / já usado",
-          });
-        }
         invalid++;
       }
     }
 
-    return new Response(
-      JSON.stringify({ ok: true, processed: dataRows.length, valid, invalid }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ ok: true, valid, invalid }), { headers: corsHeaders });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error(msg);
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error("ERRO GERAL:", e);
+    return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: corsHeaders,
     });
   }
 });
