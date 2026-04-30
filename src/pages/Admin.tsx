@@ -10,7 +10,10 @@ import {
   HelpCircle,
   Loader2,
   LogOut,
+  RefreshCw,
   Search,
+  ShieldCheck,
+  ShieldAlert,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -52,6 +55,8 @@ interface Response {
   tracking_code: string | null;
   google_form_completed: boolean;
   google_form_completed_at: string | null;
+  token_validated?: boolean;
+  token_validated_at?: string | null;
   consent_given: boolean;
   screening_answers: Record<string, unknown>;
   main_answers: Record<string, unknown>;
@@ -67,6 +72,34 @@ const Admin = () => {
   const [selected, setSelected] = useState<Response | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const syncGoogleForms = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "sync-google-form-responses",
+        { body: {} },
+      );
+      if (error) throw error;
+      const d = data as { processed?: number; valid?: number; invalid?: number; error?: string };
+      if (d?.error) throw new Error(d.error);
+      toast.success(
+        `Sincronizado: ${d.valid ?? 0} válidas, ${d.invalid ?? 0} inválidas (${d.processed ?? 0} processadas)`,
+      );
+      // refresh
+      const { data: fresh } = await supabase
+        .from("survey_responses")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (fresh) setResponses(fresh as Response[]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Erro ao sincronizar: ${msg}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -233,6 +266,14 @@ const Admin = () => {
               <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
               Tempo real
             </div>
+            <Button variant="default" size="sm" onClick={syncGoogleForms} disabled={syncing}>
+              {syncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline ml-1">Validar Google Forms</span>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)}>
               <HelpCircle className="h-4 w-4" />
               <span className="hidden sm:inline ml-1">Ajuda</span>
