@@ -393,15 +393,26 @@ const Admin = () => {
                         {r.email && <div className="truncate max-w-[180px]">{r.email}</div>}
                       </td>
                       <td className="px-4 py-3">
-                        {r.google_form_completed ? (
-                          <Badge className="bg-success text-success-foreground hover:bg-success">
-                            Concluído
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-orange-500/50 text-orange-600 dark:text-orange-400">
-                            Pendente
-                          </Badge>
-                        )}
+                        <div className="flex flex-col gap-1 items-start">
+                          {r.google_form_completed ? (
+                            <Badge className="bg-success text-success-foreground hover:bg-success">
+                              Concluído
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-orange-500/50 text-orange-600 dark:text-orange-400">
+                              Pendente
+                            </Badge>
+                          )}
+                          {r.token_validated ? (
+                            <Badge className="bg-primary/15 text-primary hover:bg-primary/15 gap-1">
+                              <ShieldCheck className="h-3 w-3" /> Token válido
+                            </Badge>
+                          ) : r.google_form_completed ? (
+                            <Badge variant="outline" className="border-destructive/50 text-destructive gap-1">
+                              <ShieldAlert className="h-3 w-3" /> Não validado
+                            </Badge>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">
                         {new Date(r.created_at).toLocaleString("pt-BR")}
