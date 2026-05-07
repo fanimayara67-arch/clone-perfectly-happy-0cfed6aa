@@ -111,6 +111,7 @@ const Index = () => {
         email: personalCheck.data.email || null,
         tracking_code: trackingCode,
         screening_answers: {
+          sexual_orientation: personalCheck.data.sexual_orientation,
           electronic_consent: {
             participant_name: state.consent?.participantName || personalCheck.data.full_name,
             identity_document: state.consent?.identityDocument || null,
