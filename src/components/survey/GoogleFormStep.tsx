@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { PersonalData } from "@/components/survey/PersonalDataStep";
 import { QuestionsStep } from "@/components/survey/QuestionsStep";
 import { MAIN_QUESTIONS, SCREENING_QUESTIONS } from "@/lib/survey-questions";
-import { submitToGoogleForms, type AnswerMap } from "@/lib/google-forms";
+import type { AnswerMap } from "@/lib/google-forms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -68,44 +68,19 @@ export const GoogleFormStep = ({ personal, trackingCode, onDone }: GoogleFormSte
     setSubmitting(true);
 
     try {
-      const { data: tokenValidated, error: tokenError } = await supabase.rpc("validate_and_consume_token", {
-        _code: trackingCode,
-        _response_id: null,
+      const { data, error } = await supabase.functions.invoke("submit-google-form-response", {
+        body: {
+          trackingCode,
+          screening: screeningAnswers,
+          main: mainAnswers,
+        },
       });
 
-      if (tokenError) throw tokenError;
-      if (!tokenValidated) {
-        toast.error("Esse token é inválido ou já foi utilizado.");
-        setSubmitting(false);
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
         return;
       }
-
-      await submitToGoogleForms({
-        personal: personal as PersonalData,
-        trackingCode,
-        screening: screeningAnswers,
-        main: mainAnswers,
-      });
-
-      const { error: updateError } = await supabase
-        .from("survey_responses")
-        .update({
-          screening_answers: {
-            sexual_orientation: personal.sexual_orientation,
-            electronic_consent: {
-              participant_name: personal.full_name,
-            },
-            questionnaire: screeningAnswers,
-          },
-          main_answers: mainAnswers,
-          token_validated: true,
-          token_validated_at: new Date().toISOString(),
-          google_form_completed: true,
-          google_form_completed_at: new Date().toISOString(),
-        })
-        .eq("tracking_code", trackingCode);
-
-      if (updateError) throw updateError;
 
       toast.success("Respostas enviadas com sucesso.");
       onDone();
