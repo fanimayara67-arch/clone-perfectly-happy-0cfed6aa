@@ -103,8 +103,6 @@ const Index = () => {
         age: personalCheck.data.age,
         nationality: personalCheck.data.nationality,
         cep: personalCheck.data.cep,
-        street: personalCheck.data.street || null,
-        number: personalCheck.data.number || null,
         neighborhood: personalCheck.data.neighborhood,
         city: personalCheck.data.city,
         state: personalCheck.data.state,
