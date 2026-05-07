@@ -19,12 +19,11 @@ const GOOGLE_FORM_ENTRIES: EntryMap = {
   age: "",
   nationality: "",
   cep: "",
-  street: "",
-  number: "",
   neighborhood: "",
   city: "",
   state: "",
   gender: "",
+  sexual_orientation: "",
   phone: "",
   email: "",
 
