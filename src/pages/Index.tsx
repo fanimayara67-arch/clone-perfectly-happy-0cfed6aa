@@ -103,8 +103,6 @@ const Index = () => {
         age: personalCheck.data.age,
         nationality: personalCheck.data.nationality,
         cep: personalCheck.data.cep,
-        street: personalCheck.data.street || null,
-        number: personalCheck.data.number || null,
         neighborhood: personalCheck.data.neighborhood,
         city: personalCheck.data.city,
         state: personalCheck.data.state,
@@ -113,6 +111,7 @@ const Index = () => {
         email: personalCheck.data.email || null,
         tracking_code: trackingCode,
         screening_answers: {
+          sexual_orientation: personalCheck.data.sexual_orientation,
           electronic_consent: {
             participant_name: state.consent?.participantName || personalCheck.data.full_name,
             identity_document: state.consent?.identityDocument || null,

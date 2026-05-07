@@ -25,16 +25,15 @@ export const personalDataSchema = z.object({
   nationality: z.string().trim().min(2, "Informe sua nacionalidade").max(60),
   cep: z
     .string()
-    .regex(/^\d{5}-\d{3}$/, "CEP inválido (use 00000-000)"),
-  street: z.string().trim().min(2, "Informe um CEP válido para preencher a rua").max(120),
-  number: z.string().trim().max(20).optional().or(z.literal("")),
+    .regex(/^\d{5}-\d{3}$/, "CEP inválido (use o formato 00000-000)"),
   neighborhood: z.string().trim().min(2, "Informe o bairro").max(80),
   city: z.string().trim().min(2, "Informe a cidade").max(80),
   state: z
     .string()
     .trim()
-    .length(2, "UF deve ter 2 letras"),
+    .length(2, "UF deve conter 2 letras"),
   gender: z.string().min(1, "Selecione o gênero"),
+  sexual_orientation: z.string().min(1, "Selecione a orientação sexual"),
   phone: z
     .string()
     .regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, "Telefone inválido"),
@@ -54,13 +53,22 @@ interface PersonalDataStepProps {
 }
 
 const GENDERS = [
-  "Masculino",
   "Feminino",
+  "Masculino",
+  "Não-binário",
+  "Transgênero",
+  "Prefiro não informar",
+  "Outro",
+];
+
+const SEXUAL_ORIENTATIONS = [
+  "Heterossexual",
   "Homossexual",
   "Bissexual",
-  "Transgênero",
-  "Prefiro não dizer",
-  "Outro",
+  "Assexual",
+  "Pansexual",
+  "Prefiro não informar",
+  "Outra",
 ];
 
 const NATIONALITIES = [
@@ -133,19 +141,18 @@ export const PersonalDataStep = ({
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
       const json = await res.json();
       if (json.erro) {
-        update({ street: "", neighborhood: "", city: "", state: "" });
+        update({ neighborhood: "", city: "", state: "" });
         toast.error("CEP não encontrado");
         return;
       }
       setLastValidCep(cep);
       update({
-        street: json.logradouro || "",
         neighborhood: json.bairro || "",
         city: json.localidade || "",
         state: (json.uf || "").toUpperCase(),
       }, cep);
     } catch {
-      toast.error("Erro ao buscar CEP");
+      toast.error("Erro ao buscar o CEP");
     } finally {
       setCepLoading(false);
     }
@@ -155,7 +162,7 @@ export const PersonalDataStep = ({
     <div className="space-y-4">
       <SectionHeader
         title="Dados Pessoais"
-        subtitle="Preencha seus dados antes das perguntas. O CEP precisa ser válido no Brasil."
+        subtitle="Preencha seus dados antes de iniciar as perguntas. O CEP deve ser válido em território brasileiro."
       />
 
       <Card>
@@ -163,7 +170,7 @@ export const PersonalDataStep = ({
           <Input
             value={data.full_name || ""}
             onChange={(e) => update({ full_name: e.target.value })}
-            placeholder="Seu nome completo"
+            placeholder="Digite seu nome completo"
             maxLength={120}
             className="h-12"
           />
@@ -178,7 +185,7 @@ export const PersonalDataStep = ({
               onChange={(e) =>
                 update({ age: e.target.value ? Number(e.target.value) : undefined })
               }
-              placeholder="Ex: 28"
+              placeholder="Ex.: 28"
               min={18}
               max={110}
               className="h-12"
@@ -203,6 +210,24 @@ export const PersonalDataStep = ({
           </Field>
         </div>
 
+        <Field label="Orientação sexual" error={errors.sexual_orientation}>
+          <Select
+            value={data.sexual_orientation || ""}
+            onValueChange={(v) => update({ sexual_orientation: v })}
+          >
+            <SelectTrigger className="h-12">
+              <SelectValue placeholder="Selecione sua orientação sexual" />
+            </SelectTrigger>
+            <SelectContent>
+              {SEXUAL_ORIENTATIONS.map((o) => (
+                <SelectItem key={o} value={o}>
+                  {o}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
         <Field label="Nacionalidade" error={errors.nationality}>
           <Select
             value={data.nationality || ""}
@@ -224,7 +249,7 @@ export const PersonalDataStep = ({
 
       <Card>
         <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-2">
-          Endereço
+          Localização
         </p>
         <Field label="CEP" error={errors.cep}>
           <Input
@@ -238,7 +263,7 @@ export const PersonalDataStep = ({
               update(
                 formatted === lastValidCep
                   ? { cep: formatted }
-                  : { cep: formatted, street: "", neighborhood: "", city: "", state: "" },
+                  : { cep: formatted, neighborhood: "", city: "", state: "" },
               );
 
               if (
@@ -256,31 +281,12 @@ export const PersonalDataStep = ({
             className="h-12"
           />
           {cepLoading && (
-            <p className="text-xs text-muted-foreground mt-1">Buscando endereço...</p>
+            <p className="text-xs text-muted-foreground mt-1">Buscando localização...</p>
           )}
           {!cepLoading && lastValidCep === data.cep && !!data.state && (
             <p className="text-xs text-primary font-medium mt-1">CEP validado com sucesso.</p>
           )}
         </Field>
-
-        <div className="grid grid-cols-[1fr_90px] gap-3">
-          <Field label="Rua" error={errors.street}>
-            <Input
-              value={data.street || ""}
-              onChange={(e) => update({ street: e.target.value })}
-              placeholder="Rua / Avenida"
-              className="h-12"
-            />
-          </Field>
-          <Field label="Número" error={errors.number}>
-            <Input
-              value={data.number || ""}
-              onChange={(e) => update({ number: e.target.value })}
-              placeholder="Nº"
-              className="h-12"
-            />
-          </Field>
-        </div>
 
         <Field label="Bairro" error={errors.neighborhood}>
           <Input
@@ -321,7 +327,7 @@ export const PersonalDataStep = ({
             className="h-12"
           />
         </Field>
-        <Field label="E-mail para receber informações/resultados" error={errors.email}>
+        <Field label="E-mail para receber informações e resultados" error={errors.email}>
           <Input
             type="email"
             value={data.email || ""}
