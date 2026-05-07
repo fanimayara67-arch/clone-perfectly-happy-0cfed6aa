@@ -4,7 +4,6 @@ export type AnswerMap = Record<string, string | string[]>;
 
 type GoogleFormPayload = {
   personal: PersonalData;
-  trackingCode: string;
   screening: AnswerMap;
   main: AnswerMap;
 };
@@ -13,21 +12,59 @@ type EntryMap = Record<string, string>;
 
 export const GOOGLE_FORM_ID = "1FAIpQLSfkK5RUJIZ6a95AGx7zHDJAKWo9a1_SSEVO9umV8l5idc5VHw";
 export const GOOGLE_FORM_URL = `https://docs.google.com/forms/d/e/${GOOGLE_FORM_ID}/viewform`;
+export const GOOGLE_FORM_EMBED_URL = `${GOOGLE_FORM_URL}?embedded=true`;
 
 const GOOGLE_FORM_ENTRIES: EntryMap = {
-  tracking_code: "1804684228",
-  q_1: "442706269",
-  q_2: "1935997617",
-  q_3: "143558976",
-  q_4: "99514619",
-  q_5: "257452622",
-  q_6: "1507661215",
-  q_7: "1126335688",
-  q_8: "475578328",
-  q_9: "1402506352",
-  q_10: "274223193",
-  q_11: "66142070",
-  comments: "260238313",
+  full_name: "",
+  age: "",
+  nationality: "",
+  cep: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+  gender: "",
+  sexual_orientation: "",
+  phone: "",
+  email: "",
+
+  // Triagem: preencha com os entry IDs do Google Forms quando criar as perguntas.
+  s_1: "",
+  s_2: "",
+  s_3: "",
+  s_4: "",
+  s_5: "",
+  s_6: "",
+  s_7: "",
+  s_8: "",
+  s_9: "",
+  s_10: "",
+  s_11: "",
+  s_12: "",
+  s_13: "",
+  s_14: "",
+  s_15: "",
+  s_16: "",
+  s_17: "",
+  s_18: "",
+  s_19: "",
+  s_20: "",
+
+  // Pesquisa principal.
+  knowledge_heard: "",
+  knowledge_source: "",
+  knowledge_purpose: "",
+  use_personal: "",
+  use_known_person: "",
+  facial_term_known: "",
+  facial_perception: "",
+  facial_observed: "",
+  body_perception: "",
+  body_observed: "",
+  safety_opinion: "",
+  would_recommend: "",
+  complementary_treatment: "",
+  dentist_role: "",
+  comments: "",
 };
 
 const appendValue = (body: URLSearchParams, entryId: string, value?: string | number | string[] | null) => {
@@ -51,15 +88,47 @@ const appendAnswerMap = (body: URLSearchParams, answers: AnswerMap) => {
 
 export const isGoogleFormsConfigured = () =>
   Boolean(GOOGLE_FORM_ID) &&
-  Object.values(GOOGLE_FORM_ENTRIES).every((entryId) => Boolean(entryId));
+  Object.values(GOOGLE_FORM_ENTRIES).some((entryId) => Boolean(entryId));
 
-export const submitToGoogleForms = async ({ trackingCode, screening, main }: GoogleFormPayload) => {
-  if (!isGoogleFormsConfigured()) {
-    throw new Error("Google Forms não está configurado.");
+export const createGoogleFormUrl = (personal?: Partial<PersonalData>, embedded = true) => {
+  const params = new URLSearchParams();
+  if (embedded) params.set("embedded", "true");
+
+  if (personal) {
+    appendValue(params, GOOGLE_FORM_ENTRIES.full_name, personal.full_name);
+    appendValue(params, GOOGLE_FORM_ENTRIES.age, personal.age);
+    appendValue(params, GOOGLE_FORM_ENTRIES.nationality, personal.nationality);
+    appendValue(params, GOOGLE_FORM_ENTRIES.cep, personal.cep);
+    appendValue(params, GOOGLE_FORM_ENTRIES.neighborhood, personal.neighborhood);
+    appendValue(params, GOOGLE_FORM_ENTRIES.city, personal.city);
+    appendValue(params, GOOGLE_FORM_ENTRIES.state, personal.state);
+    appendValue(params, GOOGLE_FORM_ENTRIES.gender, personal.gender);
+    appendValue(params, GOOGLE_FORM_ENTRIES.sexual_orientation, personal.sexual_orientation);
+    appendValue(params, GOOGLE_FORM_ENTRIES.phone, personal.phone);
+    appendValue(params, GOOGLE_FORM_ENTRIES.email, personal.email);
   }
 
+  const query = params.toString();
+  return query ? `${GOOGLE_FORM_URL}?${query}` : GOOGLE_FORM_URL;
+};
+
+export const submitToGoogleForms = async ({ personal, screening, main }: GoogleFormPayload) => {
+  if (!isGoogleFormsConfigured()) return { skipped: true };
+
   const body = new URLSearchParams();
-  appendValue(body, GOOGLE_FORM_ENTRIES.tracking_code, trackingCode);
+
+  appendValue(body, GOOGLE_FORM_ENTRIES.full_name, personal.full_name);
+  appendValue(body, GOOGLE_FORM_ENTRIES.age, personal.age);
+  appendValue(body, GOOGLE_FORM_ENTRIES.nationality, personal.nationality);
+  appendValue(body, GOOGLE_FORM_ENTRIES.cep, personal.cep);
+  appendValue(body, GOOGLE_FORM_ENTRIES.neighborhood, personal.neighborhood);
+  appendValue(body, GOOGLE_FORM_ENTRIES.city, personal.city);
+  appendValue(body, GOOGLE_FORM_ENTRIES.state, personal.state);
+  appendValue(body, GOOGLE_FORM_ENTRIES.gender, personal.gender);
+  appendValue(body, GOOGLE_FORM_ENTRIES.sexual_orientation, personal.sexual_orientation);
+  appendValue(body, GOOGLE_FORM_ENTRIES.phone, personal.phone);
+  appendValue(body, GOOGLE_FORM_ENTRIES.email, personal.email);
+
   appendAnswerMap(body, screening);
   appendAnswerMap(body, main);
 

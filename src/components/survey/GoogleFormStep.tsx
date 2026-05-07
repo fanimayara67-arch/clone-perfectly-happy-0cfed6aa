@@ -1,10 +1,8 @@
-import { useMemo, useState } from "react";
-import { Check, Copy, Loader2, Send } from "lucide-react";
+import { useState } from "react";
+import { Copy, ExternalLink, Loader2, KeyRound, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PersonalData } from "@/components/survey/PersonalDataStep";
-import { QuestionsStep } from "@/components/survey/QuestionsStep";
-import { MAIN_QUESTIONS, SCREENING_QUESTIONS } from "@/lib/survey-questions";
-import type { AnswerMap } from "@/lib/google-forms";
+import { createGoogleFormUrl } from "@/lib/google-forms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -14,93 +12,46 @@ interface GoogleFormStepProps {
   onDone: () => void;
 }
 
-const isAnswered = (value: string | string[] | undefined) => {
-  if (Array.isArray(value)) return value.length > 0;
-  return typeof value === "string" && value.trim().length > 0;
-};
-
 export const GoogleFormStep = ({ personal, trackingCode, onDone }: GoogleFormStepProps) => {
+  const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [screeningAnswers, setScreeningAnswers] = useState<AnswerMap>({});
-  const [mainAnswers, setMainAnswers] = useState<AnswerMap>({});
-
-  const allQuestions = useMemo(() => [...SCREENING_QUESTIONS, ...MAIN_QUESTIONS], []);
-
-  const missingRequired = useMemo(() => {
-    return allQuestions.filter((question) => {
-      if (!question.required) return false;
-      const source = SCREENING_QUESTIONS.some((item) => item.id === question.id)
-        ? screeningAnswers
-        : mainAnswers;
-      return !isAnswered(source[question.id]);
-    });
-  }, [allQuestions, mainAnswers, screeningAnswers]);
+  const [finishing, setFinishing] = useState(false);
+  const embedUrl = createGoogleFormUrl(personal, true);
+  const openUrl = createGoogleFormUrl(personal, false);
 
   const copyCode = async () => {
     if (!trackingCode) return;
     try {
       await navigator.clipboard.writeText(trackingCode);
       setCopied(true);
-      toast.success("Token copiado.");
+      toast.success("Código copiado!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Não foi possível copiar o token.");
+      toast.error("Não foi possível copiar. Anote o código manualmente.");
     }
   };
 
-  const handleSubmit = async () => {
-    if (!trackingCode) {
-      toast.error("Token de identificação não encontrado.");
-      return;
-    }
-
-    if (missingRequired.length > 0) {
-      toast.error("Responda todas as perguntas obrigatórias antes de enviar.");
-      return;
-    }
-
-    if (!personal?.full_name || !personal?.age || !personal?.cep) {
-      toast.error("Os dados pessoais não foram carregados corretamente.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("submit-google-form-response", {
-        body: {
-          trackingCode,
-          screening: screeningAnswers,
-          main: mainAnswers,
-        },
+  const handleDone = async () => {
+    setFinishing(true);
+    if (trackingCode) {
+      const { error } = await supabase.rpc("mark_google_form_completed", {
+        _tracking_code: trackingCode,
       });
-
-      if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      toast.success("Respostas enviadas com sucesso.");
-      onDone();
-    } catch (error) {
-      console.error(error);
-      toast.error("Não foi possível enviar a pesquisa. Tente novamente.");
-    } finally {
-      setSubmitting(false);
+      if (error) console.error(error);
     }
+    setFinishing(false);
+    onDone();
   };
 
   return (
     <div className="space-y-4">
       <div className="bg-gradient-hero rounded-2xl p-5 text-primary-foreground shadow-soft">
         <p className="text-xs font-semibold uppercase tracking-wider opacity-90 mb-2">
-          Pesquisa
+          Formulário Google
         </p>
-        <h2 className="text-lg font-bold">Respostas com validação de token</h2>
+        <h2 className="text-lg font-bold">Triagem e pesquisa</h2>
         <p className="text-sm opacity-90 mt-1 leading-snug">
-          O envio só é liberado com o token gerado nesta pesquisa. O participante não envia nada ao formulário externo sem passar por essa validação.
+          Responda a pesquisa abaixo. Se o Google não carregar no seu navegador, use o botão para abrir a pesquisa.
         </p>
       </div>
 
@@ -108,12 +59,14 @@ export const GoogleFormStep = ({ personal, trackingCode, onDone }: GoogleFormSte
         <div className="bg-card rounded-2xl p-5 border-2 border-primary/30 shadow-card">
           <div className="flex items-start gap-3 mb-3">
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <Send className="h-4 w-4" />
+              <KeyRound className="h-4 w-4" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-foreground leading-snug">Token da resposta</p>
+              <p className="text-sm font-bold text-foreground leading-snug">
+                Seu código de identificação
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Este token identifica a resposta e é enviado automaticamente ao Google Forms somente após a validação.
+                Cole este código no campo <strong>"Código de identificação"</strong> dentro do Google Forms antes de enviar suas respostas.
               </p>
             </div>
           </div>
@@ -121,40 +74,68 @@ export const GoogleFormStep = ({ personal, trackingCode, onDone }: GoogleFormSte
             <code className="flex-1 text-base font-mono font-bold text-foreground tracking-wider text-center">
               {trackingCode}
             </code>
-            <Button size="sm" variant="outline" onClick={copyCode} className="h-9 rounded-lg shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copyCode}
+              className="h-9 rounded-lg shrink-0"
+            >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              <span className="ml-1.5 text-xs font-semibold">{copied ? "Copiado" : "Copiar"}</span>
+              <span className="ml-1.5 text-xs font-semibold">
+                {copied ? "Copiado" : "Copiar"}
+              </span>
             </Button>
           </div>
         </div>
       )}
 
-      {SCREENING_QUESTIONS.length > 0 && (
-        <QuestionsStep
-          title="Triagem"
-          subtitle="Responda às questões iniciais antes do envio da pesquisa."
-          questions={SCREENING_QUESTIONS}
-          answers={screeningAnswers}
-          onChange={(id, value) => setScreeningAnswers((prev) => ({ ...prev, [id]: value }))}
-        />
-      )}
-
-      <QuestionsStep
-        title="Questionário principal"
-        subtitle="As respostas serão validadas aqui e enviadas ao Google Forms apenas se o token for legítimo."
-        questions={MAIN_QUESTIONS}
-        answers={mainAnswers}
-        onChange={(id, value) => setMainAnswers((prev) => ({ ...prev, [id]: value }))}
-      />
-
-      <Button
-        size="lg"
-        onClick={handleSubmit}
-        disabled={submitting}
-        className="h-12 w-full rounded-xl bg-gradient-primary font-semibold"
-      >
-        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar respostas"}
+      <Button asChild size="lg" className="h-12 w-full rounded-xl bg-gradient-primary font-semibold">
+        <a href={openUrl} target="_blank" rel="noreferrer">
+          Abrir pesquisa agora
+          <ExternalLink className="h-4 w-4 ml-2" />
+        </a>
       </Button>
+
+      <div className="relative bg-card rounded-2xl border border-border/60 shadow-card overflow-hidden">
+        {!loaded && (
+          <div className="absolute inset-0 z-10 flex min-h-[420px] items-center justify-center bg-background/90 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3 px-6 text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="text-sm font-medium text-foreground">Carregando Google Forms…</p>
+              <p className="max-w-sm text-xs text-muted-foreground leading-relaxed">
+                Caso demore ou fique em branco, toque em "Abrir pesquisa agora".
+              </p>
+            </div>
+          </div>
+        )}
+        <iframe
+          title="Google Forms — Triagem e Pesquisa"
+          src={embedUrl}
+          onLoad={() => setLoaded(true)}
+          loading="eager"
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="h-[calc(100vh-260px)] min-h-[760px] w-full border-0 bg-background"
+        >
+          Carregando formulário…
+        </iframe>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button asChild variant="outline" size="lg" className="h-12 rounded-xl">
+          <a href={openUrl} target="_blank" rel="noreferrer">
+            Abrir no Google Forms
+            <ExternalLink className="h-4 w-4 ml-2" />
+          </a>
+        </Button>
+        <Button
+          size="lg"
+          onClick={handleDone}
+          disabled={finishing}
+          className="h-12 rounded-xl bg-gradient-primary font-semibold"
+        >
+          {finishing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Finalizei o Google Forms"}
+        </Button>
+      </div>
     </div>
   );
 };
