@@ -28,11 +28,7 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
     consentDate: today,
   });
 
-  const consentComplete =
-    consentData.participantName.trim().length >= 3 &&
-    consentData.identityDocument.trim().length >= 3 &&
-    consentData.consentCity.trim().length >= 2 &&
-    !!consentData.consentDate;
+  const consentComplete = true;
 
   const handleContinue = () => {
     if (decision === "accept" && consentComplete) onAccept(consentData);
@@ -74,7 +70,7 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
             E, para alcançar o público alvo da pesquisa será realizada a divulgação em redes sociais dos pesquisadores e de profissionais referência na área de emagrecimento, na Bahia, assim como a amostragem probabilística por bola de neve. A coleta ocorrerá final do mês de setembro de 2026, de forma online, via Google Forms, com o questionário sendo disponibilizado apenas após aceite do TCLE e seleção dos participantes com base nas respostas às perguntas, filtro iniciais, garantindo que apenas aqueles que atendam a todos os critérios de inclusão avancem para a seção principal do questionário, enquanto os demais receberão uma mensagem de exclusão.
           </p>
           <p>
-            Como instrumento de coleta, será utilizado um formulário com 16 perguntas, dessas 6 objetivas e 10 subjetivas. O questionário abordará as percepções dos participantes sobre mudanças estéticas faciais e corporais após o uso de agonistas de GLP-1, incluindo avaliação das alterações visuais percebidas pelos participantes. Também será permitida a inclusão de comentários adicionais sobre suas experiências, garantindo uma visão completa da percepção individual.
+            Como instrumento de coleta, será utilizado um formulário com 11 perguntas, dessas 10 objetivas e 1 subjetiva. O questionário abordará as percepções dos participantes sobre mudanças estéticas faciais e corporais após o uso de agonistas de GLP-1, incluindo avaliação das alterações visuais percebidas pelos participantes. Também será permitida a inclusão de comentários adicionais sobre suas experiências, garantindo uma visão completa da percepção individual.
           </p>
           <p>
             Os participantes podem apresentar desconforto emocional ou psicológico ao refletirem sobre sua imagem corporal e facial. Para minimizar esse risco, será garantido o direito de não responder perguntas que causem incômodo e de desistir da pesquisa a qualquer momento, sem prejuízo. E o(a) participante que deflagrar o risco de desconforto será encaminhado(a) para atendimento na clínica-escola de Psicologia da UNIFTC. Há também o risco de exposição de informações pessoais devido à coleta de dados online. Para reduzi-lo, as informações serão armazenadas de forma segura, com acesso restrito aos pesquisadores.
@@ -100,46 +96,8 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
           <p>
             Este termo de consentimento encontra-se disponibilizado em formato digital, sendo aceito eletronicamente pelo(a) participante antes do início do formulário. Os dados e instrumentos utilizados na pesquisa ficarão arquivados com o pesquisador responsável por um período de cinco (5) anos, e após esse tempo serão destruídos. Os pesquisadores tratarão a sua identidade com padrões profissionais de sigilo, atendendo a legislação brasileira (Resolução Nº 466/12 do Conselho Nacional de Saúde), utilizando as informações somente para os fins acadêmicos e científicos.
           </p>
-          <div className="rounded-xl border border-border/60 bg-secondary/40 p-4 space-y-3">
-            <p>
-              Eu, <strong>{consentData.participantName.trim() || "participante"}</strong>, portador do documento de Identidade <strong>{consentData.identityDocument.trim() || "a informar"}</strong> fui informado (a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-name" className="text-xs font-semibold">Nome completo do participante</Label>
-                <Input id="consent-name" value={consentData.participantName} onChange={(e) => setConsentData((current) => ({ ...current, participantName: e.target.value }))} placeholder="Digite seu nome completo" maxLength={120} className="h-11 bg-background" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-id" className="text-xs font-semibold">CPF</Label>
-                <Input
-                  id="consent-id"
-                  value={consentData.identityDocument}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                    const formatted = digits
-                      .replace(/^(\d{3})(\d)/, "$1.$2")
-                      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-                      .replace(/\.(\d{3})(\d)/, ".$1-$2");
-                    setConsentData((current) => ({ ...current, identityDocument: formatted }));
-                  }}
-                  placeholder="000.000.000-00"
-                  inputMode="numeric"
-                  maxLength={14}
-                  className="h-11 bg-background"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-city" className="text-xs font-semibold">Cidade do aceite</Label>
-                <Input id="consent-city" value={consentData.consentCity} onChange={(e) => setConsentData((current) => ({ ...current, consentCity: e.target.value }))} maxLength={80} className="h-11 bg-background" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-date" className="text-xs font-semibold">Data do aceite eletrônico</Label>
-                <Input id="consent-date" type="date" value={consentData.consentDate} onChange={(e) => setConsentData((current) => ({ ...current, consentDate: e.target.value }))} className="h-11 bg-background" />
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Instituto Mantenedor de Ensino Superior da Bahia - IMES · Avenida Luís Viana Filho, 8812, Paralela, - FTC- Módulo 1, Nível 3. · Telefone: (71) 3281-8214. E-mail: cep@ftc.edu.br
+          <p>
+            Eu, participante desta pesquisa, fui informado(a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar.
           </p>
         </div>
       </div>

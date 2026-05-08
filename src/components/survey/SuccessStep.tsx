@@ -11,11 +11,7 @@ export const SuccessStep = (_props: SuccessStepProps) => {
         <div className="mx-auto h-16 w-16 rounded-full bg-primary-foreground/20 flex items-center justify-center mb-4 backdrop-blur-sm">
           <CheckCircle2 className="h-9 w-9" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">Obrigado pela participação!</h1>
-        <p className="text-sm opacity-95 leading-relaxed">
-          Sua contribuição é fundamental para o avanço da pesquisa científica em
-          Odontologia.
-        </p>
+        <h1 className="text-2xl font-bold">Obrigado pela participação!</h1>
       </div>
     </div>
   );
