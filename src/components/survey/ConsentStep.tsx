@@ -100,46 +100,8 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
           <p>
             Este termo de consentimento encontra-se disponibilizado em formato digital, sendo aceito eletronicamente pelo(a) participante antes do início do formulário. Os dados e instrumentos utilizados na pesquisa ficarão arquivados com o pesquisador responsável por um período de cinco (5) anos, e após esse tempo serão destruídos. Os pesquisadores tratarão a sua identidade com padrões profissionais de sigilo, atendendo a legislação brasileira (Resolução Nº 466/12 do Conselho Nacional de Saúde), utilizando as informações somente para os fins acadêmicos e científicos.
           </p>
-          <div className="rounded-xl border border-border/60 bg-secondary/40 p-4 space-y-3">
-            <p>
-              Eu, <strong>{consentData.participantName.trim() || "participante"}</strong>, portador do documento de Identidade <strong>{consentData.identityDocument.trim() || "a informar"}</strong> fui informado (a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-name" className="text-xs font-semibold">Nome completo do participante</Label>
-                <Input id="consent-name" value={consentData.participantName} onChange={(e) => setConsentData((current) => ({ ...current, participantName: e.target.value }))} placeholder="Digite seu nome completo" maxLength={120} className="h-11 bg-background" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-id" className="text-xs font-semibold">CPF</Label>
-                <Input
-                  id="consent-id"
-                  value={consentData.identityDocument}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                    const formatted = digits
-                      .replace(/^(\d{3})(\d)/, "$1.$2")
-                      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-                      .replace(/\.(\d{3})(\d)/, ".$1-$2");
-                    setConsentData((current) => ({ ...current, identityDocument: formatted }));
-                  }}
-                  placeholder="000.000.000-00"
-                  inputMode="numeric"
-                  maxLength={14}
-                  className="h-11 bg-background"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-city" className="text-xs font-semibold">Cidade do aceite</Label>
-                <Input id="consent-city" value={consentData.consentCity} onChange={(e) => setConsentData((current) => ({ ...current, consentCity: e.target.value }))} maxLength={80} className="h-11 bg-background" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="consent-date" className="text-xs font-semibold">Data do aceite eletrônico</Label>
-                <Input id="consent-date" type="date" value={consentData.consentDate} onChange={(e) => setConsentData((current) => ({ ...current, consentDate: e.target.value }))} className="h-11 bg-background" />
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Instituto Mantenedor de Ensino Superior da Bahia - IMES · Avenida Luís Viana Filho, 8812, Paralela, - FTC- Módulo 1, Nível 3. · Telefone: (71) 3281-8214. E-mail: cep@ftc.edu.br
+          <p>
+            Eu, participante desta pesquisa, fui informado(a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar.
           </p>
         </div>
       </div>
