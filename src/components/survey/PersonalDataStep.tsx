@@ -12,11 +12,6 @@ import { z } from "zod";
 import { toast } from "sonner";
 
 export const personalDataSchema = z.object({
-  full_name: z
-    .string()
-    .trim()
-    .min(3, "Informe seu nome completo")
-    .max(120, "Nome muito longo"),
   age: z
     .number({ invalid_type_error: "Informe sua idade" })
     .int()
@@ -33,7 +28,6 @@ export const personalDataSchema = z.object({
     .trim()
     .length(2, "UF deve conter 2 letras"),
   gender: z.string().min(1, "Selecione o gênero"),
-  sexual_orientation: z.string().min(1, "Selecione a orientação sexual"),
   phone: z
     .string()
     .regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, "Telefone inválido"),
