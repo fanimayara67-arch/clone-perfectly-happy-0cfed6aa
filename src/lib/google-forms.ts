@@ -16,13 +16,9 @@ export const GOOGLE_FORM_EMBED_URL = `${GOOGLE_FORM_URL}?embedded=true`;
 
 const GOOGLE_FORM_ENTRIES: EntryMap = {
   age: "",
-  nationality: "",
-  cep: "",
-  neighborhood: "",
   city: "",
   state: "",
   gender: "",
-  phone: "",
   email: "",
 
   // Triagem: preencha com os entry IDs do Google Forms quando criar as perguntas.
@@ -94,13 +90,9 @@ export const createGoogleFormUrl = (personal?: Partial<PersonalData>, embedded =
 
   if (personal) {
     appendValue(params, GOOGLE_FORM_ENTRIES.age, personal.age);
-    appendValue(params, GOOGLE_FORM_ENTRIES.nationality, personal.nationality);
-    appendValue(params, GOOGLE_FORM_ENTRIES.cep, personal.cep);
-    appendValue(params, GOOGLE_FORM_ENTRIES.neighborhood, personal.neighborhood);
     appendValue(params, GOOGLE_FORM_ENTRIES.city, personal.city);
     appendValue(params, GOOGLE_FORM_ENTRIES.state, personal.state);
     appendValue(params, GOOGLE_FORM_ENTRIES.gender, personal.gender);
-    appendValue(params, GOOGLE_FORM_ENTRIES.phone, personal.phone);
     appendValue(params, GOOGLE_FORM_ENTRIES.email, personal.email);
   }
 
@@ -114,13 +106,9 @@ export const submitToGoogleForms = async ({ personal, screening, main }: GoogleF
   const body = new URLSearchParams();
 
   appendValue(body, GOOGLE_FORM_ENTRIES.age, personal.age);
-  appendValue(body, GOOGLE_FORM_ENTRIES.nationality, personal.nationality);
-  appendValue(body, GOOGLE_FORM_ENTRIES.cep, personal.cep);
-  appendValue(body, GOOGLE_FORM_ENTRIES.neighborhood, personal.neighborhood);
   appendValue(body, GOOGLE_FORM_ENTRIES.city, personal.city);
   appendValue(body, GOOGLE_FORM_ENTRIES.state, personal.state);
   appendValue(body, GOOGLE_FORM_ENTRIES.gender, personal.gender);
-  appendValue(body, GOOGLE_FORM_ENTRIES.phone, personal.phone);
   appendValue(body, GOOGLE_FORM_ENTRIES.email, personal.email);
 
   appendAnswerMap(body, screening);
