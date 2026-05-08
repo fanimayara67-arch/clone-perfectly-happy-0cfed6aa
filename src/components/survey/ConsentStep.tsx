@@ -99,6 +99,20 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
           <p>
             Eu, participante desta pesquisa, fui informado(a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar.
           </p>
+
+          <div className="mt-2 rounded-xl border border-border bg-muted/40 p-4 space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+              Comitê de Ética em Pesquisa
+            </p>
+            <p className="font-semibold text-foreground">
+              Instituto Mantenedor de Ensino Superior da Bahia — IMES
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Avenida Luís Viana Filho, 8812, Paralela — FTC, Módulo 1, Nível 3.
+            </p>
+            <p className="text-sm text-muted-foreground">Telefone: (71) 3281-8214</p>
+            <p className="text-sm text-muted-foreground">E-mail: cep@ftc.edu.br</p>
+          </div>
         </div>
       </div>
 
