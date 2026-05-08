@@ -28,11 +28,7 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
     consentDate: today,
   });
 
-  const consentComplete =
-    consentData.participantName.trim().length >= 3 &&
-    consentData.identityDocument.trim().length >= 3 &&
-    consentData.consentCity.trim().length >= 2 &&
-    !!consentData.consentDate;
+  const consentComplete = true;
 
   const handleContinue = () => {
     if (decision === "accept" && consentComplete) onAccept(consentData);
