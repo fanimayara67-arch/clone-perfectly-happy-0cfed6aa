@@ -99,7 +99,7 @@ const Index = () => {
     goTo("googleForm");
 
     supabase.from("survey_responses").insert({
-        full_name: personalCheck.data.full_name,
+        full_name: state.consent?.participantName || "Não informado",
         age: personalCheck.data.age,
         nationality: personalCheck.data.nationality,
         cep: personalCheck.data.cep,
@@ -111,9 +111,8 @@ const Index = () => {
         email: personalCheck.data.email || null,
         tracking_code: trackingCode,
         screening_answers: {
-          sexual_orientation: personalCheck.data.sexual_orientation,
           electronic_consent: {
-            participant_name: state.consent?.participantName || personalCheck.data.full_name,
+            participant_name: state.consent?.participantName || null,
             identity_document: state.consent?.identityDocument || null,
             consent_city: state.consent?.consentCity || null,
             consent_date: state.consent?.consentDate || null,

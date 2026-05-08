@@ -15,7 +15,6 @@ export const GOOGLE_FORM_URL = `https://docs.google.com/forms/d/e/${GOOGLE_FORM_
 export const GOOGLE_FORM_EMBED_URL = `${GOOGLE_FORM_URL}?embedded=true`;
 
 const GOOGLE_FORM_ENTRIES: EntryMap = {
-  full_name: "",
   age: "",
   nationality: "",
   cep: "",
@@ -23,7 +22,6 @@ const GOOGLE_FORM_ENTRIES: EntryMap = {
   city: "",
   state: "",
   gender: "",
-  sexual_orientation: "",
   phone: "",
   email: "",
 
@@ -95,7 +93,6 @@ export const createGoogleFormUrl = (personal?: Partial<PersonalData>, embedded =
   if (embedded) params.set("embedded", "true");
 
   if (personal) {
-    appendValue(params, GOOGLE_FORM_ENTRIES.full_name, personal.full_name);
     appendValue(params, GOOGLE_FORM_ENTRIES.age, personal.age);
     appendValue(params, GOOGLE_FORM_ENTRIES.nationality, personal.nationality);
     appendValue(params, GOOGLE_FORM_ENTRIES.cep, personal.cep);
@@ -103,7 +100,6 @@ export const createGoogleFormUrl = (personal?: Partial<PersonalData>, embedded =
     appendValue(params, GOOGLE_FORM_ENTRIES.city, personal.city);
     appendValue(params, GOOGLE_FORM_ENTRIES.state, personal.state);
     appendValue(params, GOOGLE_FORM_ENTRIES.gender, personal.gender);
-    appendValue(params, GOOGLE_FORM_ENTRIES.sexual_orientation, personal.sexual_orientation);
     appendValue(params, GOOGLE_FORM_ENTRIES.phone, personal.phone);
     appendValue(params, GOOGLE_FORM_ENTRIES.email, personal.email);
   }
@@ -117,7 +113,6 @@ export const submitToGoogleForms = async ({ personal, screening, main }: GoogleF
 
   const body = new URLSearchParams();
 
-  appendValue(body, GOOGLE_FORM_ENTRIES.full_name, personal.full_name);
   appendValue(body, GOOGLE_FORM_ENTRIES.age, personal.age);
   appendValue(body, GOOGLE_FORM_ENTRIES.nationality, personal.nationality);
   appendValue(body, GOOGLE_FORM_ENTRIES.cep, personal.cep);
@@ -125,7 +120,6 @@ export const submitToGoogleForms = async ({ personal, screening, main }: GoogleF
   appendValue(body, GOOGLE_FORM_ENTRIES.city, personal.city);
   appendValue(body, GOOGLE_FORM_ENTRIES.state, personal.state);
   appendValue(body, GOOGLE_FORM_ENTRIES.gender, personal.gender);
-  appendValue(body, GOOGLE_FORM_ENTRIES.sexual_orientation, personal.sexual_orientation);
   appendValue(body, GOOGLE_FORM_ENTRIES.phone, personal.phone);
   appendValue(body, GOOGLE_FORM_ENTRIES.email, personal.email);
 

@@ -12,11 +12,6 @@ import { z } from "zod";
 import { toast } from "sonner";
 
 export const personalDataSchema = z.object({
-  full_name: z
-    .string()
-    .trim()
-    .min(3, "Informe seu nome completo")
-    .max(120, "Nome muito longo"),
   age: z
     .number({ invalid_type_error: "Informe sua idade" })
     .int()
@@ -33,7 +28,6 @@ export const personalDataSchema = z.object({
     .trim()
     .length(2, "UF deve conter 2 letras"),
   gender: z.string().min(1, "Selecione o gênero"),
-  sexual_orientation: z.string().min(1, "Selecione a orientação sexual"),
   phone: z
     .string()
     .regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, "Telefone inválido"),
@@ -166,16 +160,6 @@ export const PersonalDataStep = ({
       />
 
       <Card>
-        <Field label="Nome completo" error={errors.full_name}>
-          <Input
-            value={data.full_name || ""}
-            onChange={(e) => update({ full_name: e.target.value })}
-            placeholder="Digite seu nome completo"
-            maxLength={120}
-            className="h-12"
-          />
-        </Field>
-
         <div className="grid grid-cols-2 gap-3">
           <Field label="Idade" error={errors.age}>
             <Input
@@ -209,24 +193,6 @@ export const PersonalDataStep = ({
             </Select>
           </Field>
         </div>
-
-        <Field label="Orientação sexual" error={errors.sexual_orientation}>
-          <Select
-            value={data.sexual_orientation || ""}
-            onValueChange={(v) => update({ sexual_orientation: v })}
-          >
-            <SelectTrigger className="h-12">
-              <SelectValue placeholder="Selecione sua orientação sexual" />
-            </SelectTrigger>
-            <SelectContent>
-              {SEXUAL_ORIENTATIONS.map((o) => (
-                <SelectItem key={o} value={o}>
-                  {o}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
 
         <Field label="Nacionalidade" error={errors.nationality}>
           <Select

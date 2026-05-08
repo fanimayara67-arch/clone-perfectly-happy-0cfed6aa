@@ -102,7 +102,7 @@ export const ConsentStep = ({ onAccept, onDecline }: ConsentStepProps) => {
           </p>
           <div className="rounded-xl border border-border/60 bg-secondary/40 p-4 space-y-3">
             <p>
-              Eu, <strong>{consentData.participantName.trim() || "participante"}</strong>, portador do documento de Identidade <strong>{consentData.identityDocument.trim() || "a informar"}</strong> fui informado (a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar. Declaro que concordo em participar. Recebi uma via deste termo de consentimento livre e esclarecido e me foi dada à oportunidade de ler e esclarecer as minhas dúvidas.
+              Eu, <strong>{consentData.participantName.trim() || "participante"}</strong>, portador do documento de Identidade <strong>{consentData.identityDocument.trim() || "a informar"}</strong> fui informado (a) dos objetivos da pesquisa “Percepção de adultos sobre o uso de agonistas de GLP-1 para emagrecimento: Impactos estéticos faciais e corporais”, de maneira clara e detalhada e esclareci minhas dúvidas. Sei que a qualquer momento poderei solicitar novas informações e modificar minha decisão de participar se assim o desejar.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
